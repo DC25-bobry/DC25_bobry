@@ -1,1 +1,4 @@
-# DC25_bobry
+# Technologia
+------------------------
+**Backend**: Python, FastAPI
+**Frontend**: ReDoc
