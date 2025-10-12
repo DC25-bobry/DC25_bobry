@@ -37,4 +37,4 @@ BóbrPol sp. k. to firma zajmująca się wytwarzaniem rowerów drewnianych. Firm
 ------------------------
 **Backend**: Python, FastAPI
 
-**Frontend**: ReDoc
+**Frontend**: 
