@@ -1,0 +1,6 @@
+services:
+  app:
+    build: .
+    container_name: DC25_bobry
+    ports:
+      - "8000:8000" 
