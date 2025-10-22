@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Job offer",
+  "type": "object",
+  "properties": {
+    "title": {"type": "string"},
+    "obligatory_requirements": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/requirement"}
+    },
+    "important_requirements": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/requirement"}
+    },
+    "optional_requirements": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/requirement"}
+    }
+  },
+  "additionalProperties": false,
+  "required": ["title", "obligatory_requirements"],
+  "$defs": {
+    "requirement": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "proficiency": {"type": "number", "minimum": 1, "maximum": 5}
+      },
+      "additionalProperties": false,
+      "required": ["name", "proficiency"]
+    }
+  }
+}
