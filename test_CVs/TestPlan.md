@@ -49,12 +49,11 @@
 10. Valid CV - Student - job title mentioned as part of other section - treated as no job title mentioned - requirements for Student still met
 ### Invalid CVs
 1. Invalid CV - Non-existent job title mentioned
-    - job title not mentioned anywhere
-    - job title mentioned as part of other section - treated as no job title mentioned - requirements not met for any position
-2. Invalid CV - job title not mentioned - does not meet requirements for any position
-3. Invalid CV - Senior Wood Quality Assurance Entry Level Graduate II - missing dental examination
-4. Invalid CV - Student - missing personal data (last name)
-5. Invalid CV - Senior Wood Quality Assurance Entry Level Graduate II - missing personal data (email address)
-6. Invalid CV - Student - finished education
-7. Invalid CV - wrong file format
-8. Invalid CV - Senior Wood Quality Assurance Entry Level Graduate II - experience shorter than required
+2. Invalid CV - job title mentioned as part of other section - requirements not met for any position
+3. Invalid CV - job title not mentioned - does not meet requirements for any position
+4. Invalid CV - Senior Wood Quality Assurance Entry Level Graduate II - missing dental examination
+5. Invalid CV - Student - missing personal data (last name)
+6. Invalid CV - Senior Wood Quality Assurance Entry Level Graduate II - missing personal data (email address)
+7. Invalid CV - Student - finished education
+8. Invalid CV - wrong file format
+9. Invalid CV - Senior Wood Quality Assurance Entry Level Graduate II - experience shorter than required
