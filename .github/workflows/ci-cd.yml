@@ -50,12 +50,30 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Copy .env.example to .env
+        run: |
+          if [ -f .env.example ]; then
+            cp .env.example .env
+            echo ".env file created from .env.example"
+          else
+            echo "[!] .env.example not found"
+            exit 1
+          fi
+
       - name: Ensure docker is available
         run: docker version
 
-      - name: Build docker-compose images 
+      - name: Build docker-compose images
         run: |
-          docker compose build --pull
+          set -e
+          if docker compose build --pull; then
+            echo "build succesful"
+          else
+            echo "[!] build failed"
+            docker compose logs
+            exit 1
+          fi
+
 
   deploy:
 
@@ -66,18 +84,37 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Start services (detached)
+      - name: Copy .env.example to .env
         run: |
-          docker compose up -d
+          if [ -f .env.example ]; then
+            cp .env.example .env
+            echo ".env file created from .env.example"
+          else
+            echo "[!] .env.example not found!"
+            exit 1
+          fi
+
+      - name: Start services
+        run: |
+          set -e
+          echo "starting services..."
+          if docker compose up -d; then
+            echo "services started"
+          else
+            echo "[!] failed to start services"
+            docker compose logs
+            exit 1
+          fi
 
       - name: Wait for app to be ready
         run: |
-          for i in {1..20}; do
+          set -e
+          for i in {1..10}; do
             if curl --fail --silent http://localhost:8000/; then
               echo "app is up!"
               exit 0
             fi
-            echo "waiting for app... ($i/20)"
+            echo "waiting for app... ($i/10)"
             sleep 2
           done
           echo "[!] app did not start in time"
@@ -89,8 +126,8 @@ jobs:
         run: |
           curl -f http://localhost:8000/ || (echo "[!] smoke test failed" && exit 1)
 
-      # - name: Stop services
-      #   if: always()
-      #   run: |
-      #     docker compose down
+      - name: Stop services
+        if: always()
+        run: |
+          docker compose down
 
