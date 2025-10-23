@@ -18,26 +18,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: set up Python 3.10
+      - name: Set up Python 3.10
         uses: actions/setup-python@v3
         with:
           python-version: "3.10"
 
-      - name: install dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install flake8 pytest
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: lint with flake8
+      - name: Lint with flake8
         run: |
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      - name: run tests
+      - name: Run tests
         run: |
           pytest -q backend/tests
 
@@ -47,13 +47,13 @@ jobs:
     needs: test
 
     steps:
-      - name: checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: ensure docker is available
+      - name: Ensure docker is available
         run: docker version
 
-      - name: build docker-compose images 
+      - name: Build docker-compose images 
         run: |
           docker compose build --pull
 
@@ -63,14 +63,14 @@ jobs:
     needs: build
 
     steps:
-      - name: checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: start services (detached)
+      - name: Start services (detached)
         run: |
           docker compose up -d
 
-      - name: wait for app to be ready
+      - name: Wait for app to be ready
         run: |
           for i in {1..20}; do
             if curl --fail --silent http://localhost:8000/; then
@@ -85,11 +85,11 @@ jobs:
           docker compose down
           exit 1
 
-      - name: smoke test root endpoint
+      - name: Smoke test root endpoint
         run: |
           curl -f http://localhost:8000/ || (echo "[!] smoke test failed" && exit 1)
 
-      - name: stop services
+      - name: Stop services
         if: always()
         run: |
           docker compose down
