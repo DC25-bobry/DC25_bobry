@@ -1,8 +1,6 @@
 import pprint
 import logging
-
 from fastapi import FastAPI
-from pydantic import BaseModel
 from google_drive_api import router as drive_router
 from pydantic import BaseModel, ValidationError
 

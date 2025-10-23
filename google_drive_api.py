@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, status
 from fastapi.responses import FileResponse
+from googleapiclient.discovery import Resource
 from pydantic import BaseModel
 from typing import List, Optional
 import tempfile
@@ -31,7 +32,7 @@ class DeleteResponse(BaseModel):
     file_id: str
 
 # Dependency to get Google Drive service
-def get_drive_service():
+def get_drive_service() -> Resource:
     try:
         return get_service()
     except Exception as e:
@@ -46,7 +47,7 @@ def get_drive_service():
 async def list_drive_files(
     page_size: int = 10,
     service = Depends(get_drive_service)
-):
+) -> FileListResponse:
     """List files from Google Drive."""
     try:
         files_data = list_files(service, page_size=page_size)
@@ -71,7 +72,7 @@ async def list_drive_files(
 async def list_drive_folders(
     page_size: int = 10,
     service = Depends(get_drive_service)
-):
+) -> FileListResponse:
     """List folders from Google Drive."""
     try:
         results = service.files().list(
@@ -103,7 +104,7 @@ async def upload_drive_file(
     file: UploadFile = File(...),
     parent_folder_id: Optional[str] = None,
     service = Depends(get_drive_service)
-):
+) -> UploadResponse:
     """Upload a file to Google Drive."""
     try:
         # Save uploaded file temporarily
@@ -142,14 +143,14 @@ async def upload_drive_file(
 async def download_drive_file(
     file_id: str,
     service = Depends(get_drive_service)
-):
+) -> FileResponse:
     """Download a file from Google Drive."""
     try:
         # Get file metadata
         file_metadata = service.files().get(fileId=file_id, fields="name, mimeType").execute()
         file_name = file_metadata.get("name", "download")
         
-        # Create temporary file for download
+        # Create a temporary file for download
         with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file_name}") as tmp_file:
             tmp_file_path = tmp_file.name
 
@@ -180,7 +181,7 @@ async def download_drive_file(
 async def delete_drive_file(
     file_id: str,
     service = Depends(get_drive_service)
-):
+) -> DeleteResponse:
     """Delete a file from Google Drive."""
     try:
         # Get file name before deletion for response
@@ -210,7 +211,7 @@ async def delete_drive_file(
 async def get_file_metadata(
     file_id: str,
     service = Depends(get_drive_service)
-):
+) -> DriveFile:
     """Get metadata for a specific file."""
     try:
         file_metadata = service.files().get(
@@ -242,7 +243,7 @@ async def search_drive_files(
     query: str,
     page_size: int = 10,
     service = Depends(get_drive_service)
-):
+) -> FileListResponse:
     """Search for files in Google Drive by name."""
     try:
         search_query = f"name contains '{query}'"

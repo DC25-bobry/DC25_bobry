@@ -3,34 +3,38 @@
 Utility script to obtain a Google OAuth2 refresh token.
 Run this script once to get your refresh token, then add it to your .env file.
 """
+import logging
+from typing import Optional
 
-import os
 from google_auth_oauthlib.flow import InstalledAppFlow
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+from backend.src.config.logging_config import configure_logging
+from settings import Settings
 
+configure_logging()
+
+logger = logging.getLogger(__name__)
 SCOPES = ["https://www.googleapis.com/auth/drive"]
+settings = Settings()
 
-def get_refresh_token():
+def get_refresh_token() -> Optional[str]:
     """Get a refresh token using OAuth2 flow."""
-    client_id = os.getenv("GOOGLE_CLIENT_ID")
-    client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
-    
+    client_id: Optional[str] = settings.google_drive_client_id
+    client_secret: Optional[str] = settings.google_drive_client_secret
+
     if not client_id or not client_secret:
-        print("Error: GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be set in .env file")
+        logger.error("GOOGLE_DRIVE_CLIENT_ID and GOOGLE_DRIVE_CLIENT_SECRET must be set in .env file")
         return None
     
     # Validate that credentials are not placeholder values
-    if client_id == "your_client_id_here" or client_secret == "your_client_secret_here":
-        print("Error: Please replace placeholder values in .env file with actual Google API credentials")
+    if client_id == "yourID.apps.googleusercontent.com" or client_secret == "yourSecret":
+        logger.error("Please replace placeholder values in .env file with actual Google API credentials")
         return None
     
-    print(f"Using client ID: {client_id[:20]}...")
+    logger.info(f"Using client ID: {client_id[:20]}...")
     
     # Create client config
-    client_config = {
+    client_config: dict = {
         "installed": {
             "client_id": client_id,
             "client_secret": client_secret,
@@ -42,26 +46,26 @@ def get_refresh_token():
     }
     
     try:
-        # Run OAuth flow with fixed port
+        # Run OAuth flow with a fixed port
         flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
         creds = flow.run_local_server(port=8080, open_browser=True)
         
         return creds.refresh_token
     except Exception as e:
-        print(f"Error during OAuth flow: {str(e)}")
+        logger.error(f"Error during OAuth flow: {str(e)}")
         return None
 
 if __name__ == "__main__":
-    print("Getting refresh token...")
-    print("Make sure you have GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET set in your .env file")
-    print()
+    logger.info("Getting refresh token..."
+                "Make sure you have GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET set in your .env file")
     
-    refresh_token = get_refresh_token()
-    
+    refresh_token: Optional[str] = get_refresh_token()
+
     if refresh_token:
-        print(f"Success! Your refresh token is:")
-        print(f"GOOGLE_REFRESH_TOKEN={refresh_token}")
-        print()
-        print("Add this to your .env file and you're ready to go!")
+        logger.info(
+            f"Success! Your refresh token is:\n"
+            f"GOOGLE_DRIVE_REFRESH_TOKEN={refresh_token}\n\n"
+            "Add this to your .env file and you're ready to go!"
+        )
     else:
-        print("Failed to get refresh token. Please check your credentials.")
+        logger.error("Failed to get refresh token. Please check your credentials.")
