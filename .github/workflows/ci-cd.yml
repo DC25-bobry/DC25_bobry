@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  test-backend:
+  test:
 
     runs-on: ubuntu-latest
 
