@@ -1,19 +1,25 @@
-from fastapi import FastAPI
-from pydantic import BaseModel, ValidationError
-from settings import Settings
+import pprint
 import logging
 
+from fastapi import FastAPI
+from pydantic import BaseModel, ValidationError
+
+from backend.src.config.logging_config import configure_logging
+from settings import Settings
+
+configure_logging()
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+
 settings = None
 
 try:
     settings = Settings()
-    logger.info(f"Settings loaded: {settings}")
+    logger.info("Settings loaded:\n%s", pprint.pformat(settings.model_dump(), indent=2))
 except ValidationError as e:
     logger.error("Validation error ", exc_info=e)
     for error in e.errors():
-        logger.error(error["message"], exc_info=error["exc_info"])
+        logger.error("%s: %s", error.get("loc"), error.get("msg"))
     raise SystemExit(1)
 
 app = FastAPI(title="DC25_bobry Dummy API")
