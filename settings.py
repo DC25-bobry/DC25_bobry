@@ -17,8 +17,9 @@ class Settings(BaseSettings):
 
     # google drive configuration
     google_drive_client_id: str
+    google_drive_client_secret: str
     google_drive_dir_id: str
-    google_token: str
+    google_refresh_token: str
     google_key: str
 
     # db configuration
