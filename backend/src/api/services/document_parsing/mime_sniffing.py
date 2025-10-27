@@ -28,7 +28,7 @@ def sniff_mime(content: bytes) -> Optional[str]:
         return None
 
     try:
-        return magic.from_buffer(content, mime=True)  # type: ignore[attr-defined]
+        return m.from_buffer(content, mime=True)  # type: ignore[attr-defined]
     except Exception as e:
         logger.error("Failed to determine MIME type: %s", e)
         return None
