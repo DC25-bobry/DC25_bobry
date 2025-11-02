@@ -1,0 +1,3 @@
+[2025-11-02 02:59:40] ✅ Sukces: Wiadomość wysłana do ss193461@student.pg.edu.pl
+[2025-11-02 02:59:43] ✅ Sukces: Wiadomość wysłana do kulesz.agnieszka@wp.pl
+[2025-11-02 02:59:43] Nie znaleziono pliku wiadomości: backend/src/email/templates/xx.txt — pominięto wysyłkę.
