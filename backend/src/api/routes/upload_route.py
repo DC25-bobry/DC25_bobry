@@ -39,12 +39,12 @@ async def upload_files(files: list[UploadFile] = File(...)):
         file_valid, info = validate_file(file_bytes, file.filename, file.content_type)
         if not file_valid:
             error_count += 1
-            wrong_files += file.filename
+            wrong_files += file.filename + " "
         else:
             thread = threading.Thread(target=process_file, args=(file_bytes, file.filename, file.content_type, parsing_service))
             thread.start()
 
     response_content = f"Parsing {len(files) - error_count} files."
     if error_count > 0:
-        response_content += f"\n{wrong_files}"
+        response_content += f"\nSkipped files: {wrong_files}"
     return HTMLResponse(content=response_content)
