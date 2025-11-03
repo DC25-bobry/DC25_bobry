@@ -5,7 +5,7 @@ allowed_MIME = {
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx"
 }
 
-max_size = 1024 * 1024 * 50 # 2 MB
+max_size = 1024 * 1024 * 50 # 50 MB
 
 def validate_file(file_bytes: bytes, filename: str, content_type: str) -> Tuple[bool, str]:
     message = f"{filename}: "
