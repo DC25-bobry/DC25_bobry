@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+    <style>
+        @-moz-keyframes spin {
+            from { -moz-transform: rotate(0deg); }
+            to { -moz-transform: rotate(360deg); }
+        }
+        @-webkit-keyframes spin {
+            from { -webkit-transform: rotate(0deg); }
+            to { -webkit-transform: rotate(360deg); }
+        }
+        @keyframes spin {
+            from {transform:rotate(0deg);}
+            to {transform:rotate(360deg);}
+        }
+
+        
+        html {
+            font-family: "Comic Sans MS",serif;
+            background: #D0E4F5 url("https://a.allegroimg.com/s128/11b127/32be27ab4294ac1a9bd24ca23552/BOBR-Beaver-CollectA-88382") repeat fixed 50% 50%;
+        }
+
+        header, #message, footer {
+            max-width: 75%;
+            text-align: left;
+            margin-right: auto;
+            margin-left: auto;
+            opacity: 0.9;
+        }
+
+        header {
+            margin-top: 5em;
+            margin-bottom: 1em;
+            height: 10em;
+            background-color: saddlebrown;
+            color: aliceblue;
+            line-height: 10em;
+        }
+
+        #logo {
+            animation-iteration-count: infinite;
+            animation: linear;
+            animation-name: spin;
+            animation-duration: 1s;
+            opacity: 1;
+        }
+
+        #message {
+            margin-top: 1em;
+            margin-bottom: 1em;
+            height: fit-content;
+            background-color: whitesmoke;
+            color: black;
+        }
+
+        footer {
+            margin-top: 1em;
+            margin-bottom: 5em;
+            height: fit-content;
+            background-color: whitesmoke;
+            color: saddlebrown;
+            text-align: center;
+        }
+
+
+
+    </style>
+</head>
+<body>
+<header>
+    Bóbrpol spółka komandytowa
+
+    <a href="https://pl.wikipedia.org/wiki/B%C3%B3br"><img id="logo" alt="bobr" src="https://a.allegroimg.com/s128/11b127/32be27ab4294ac1a9bd24ca23552/BOBR-Beaver-CollectA-88382"></a>
+
+</header>
+<div id="message">
+{% block message %}{% endblock %}
+</div>
+<footer>
+    Ta wiadomość została wygenerowana automatycznie więc nikt ci nie odpowie jak odpiszesz lmao.<br/>
+    Jeżeli ta wiadomość nie była przeznaczona dla ciebie to mamy to w dupie.<br/>
+    Bóbrpol sp. k. &copy2025 Wszelkie prawa zastrzeżone.
+</footer>
+</body>
+</html>
