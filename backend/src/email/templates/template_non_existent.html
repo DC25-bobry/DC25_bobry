@@ -1,0 +1,15 @@
+{% extends "template_base.html" %}
+{% block title %}Odpowiedź zwrotna{% endblock %}
+{% block message %}
+    <p>
+        dziękujemy za Twoją wielką chęć udziału w rekrutacji na stanowisko <em>{{position}}</em>
+        ale nie mamy takiego stanowiska w ofercie.
+        Coś musiał{% if gender == "f" %}a{% elif gender == "m"%}e{% else %}x{% endif %}ś
+        sobie <span class="wiggly" style="color: deeppink">ubzdurać</span>. Zalecamy konsultację u
+        <a href="https://www.znanylekarz.pl/szukaj?q=psychiatra&loc=Gda%C5%84sk%2C%20pomorskie&filters%5Bspecializations%5D%5B%5D=81">lekarza psychiatrii</a>.
+        Kolejne próby zatrudnienia się w naszej firmie skończą się sądowym zakazem zbliżania.
+    </p>
+<p>Życzymy powodzenia w karierze z dala od spółki komandytowej BóbrPol.</p>
+
+
+{% endblock %}
