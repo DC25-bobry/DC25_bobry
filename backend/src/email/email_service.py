@@ -4,6 +4,8 @@ from email.mime.text import MIMEText
 from pathlib import Path
 from datetime import datetime
 from backend.src.config.smtp_config import SMTPConfig
+from backend.src.email.email_generator import EmailGenerator
+
 
 class EmailService:
     def __init__(self):
@@ -15,6 +17,7 @@ class EmailService:
         self.encryption = SMTPConfig.ENCRYPTION
         self.logger = logging.getLogger(__name__)
 
+
     def _load_message_from_file(self, file_path: str) -> str:
         path = Path(file_path)
         if not path.exists():
@@ -22,12 +25,17 @@ class EmailService:
             return None
         return path.read_text(encoding="utf-8")
 
-    def send_email(self, recipient: str, subject: str, message_file: str):
+    def send_email_from_file(self, recipient: str, subject: str, message_file: str):
         body = self._load_message_from_file(message_file)
         if body is None:
-            return 
+            return
+        self.send_message(recipient, subject, body)
 
-        msg = MIMEText(body, "plain", "utf-8")
+    def send_email(self, recipient: str, subject: str, message: str):
+        self.send_message(recipient, subject, message)
+
+    def send_message(self, recipient: str, subject: str, message: str):
+        msg = MIMEText(message, "html", "utf-8")
         msg["From"] = self.email
         msg["To"] = recipient
         msg["Subject"] = subject
