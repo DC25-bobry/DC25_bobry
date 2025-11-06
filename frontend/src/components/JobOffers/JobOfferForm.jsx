@@ -30,6 +30,8 @@ export default function JobOfferForm({ onClose, onSave, editing = null }) {
     if (editing) setFormData({ ...editing });
   }, [editing]);
 
+  // mock synonym generator 
+  // TODO: integrate with AI synonim generator 
   const generateSynonymsMock = (keywords) => {
     if (!keywords) return [];
     const tokens = keywords.split(',').map(k => k.trim()).filter(Boolean);
