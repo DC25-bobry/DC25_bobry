@@ -7,6 +7,7 @@ python-magic-bin==0.4.14 ; platform_system == "Windows"
 colorama==0.4.6
 pydantic==2.12.3
 pydantic-settings==2.11.0
+jinja2==3.1.6
 fastapi[standard]==0.120.0
 uvicorn[standard]==0.38.0
 google-api-python-client==2.185.0
