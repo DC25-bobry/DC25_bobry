@@ -1,0 +1,245 @@
+{
+	"info": {
+		"_postman_id": "c780e4a1-f463-4bbf-8ee0-704ba9ebe24b",
+		"name": "New Collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "42757435"
+	},
+	"item": [
+		{
+			"name": "Get Google Drive all Files",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/nickpozniak/Downloads/zwolnienie.pdf"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8000/drive/files",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"drive",
+						"files"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST Google Drive File",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/nickpozniak/Downloads/zwolnienie.pdf"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8000/drive/files",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"drive",
+						"files"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET Google Drive concrete File",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/nickpozniak/Downloads/zwolnienie.pdf"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8000/drive/files/1Nf1KnjtZT5l-CDVLhggXf3EHvHc9XCbT",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"drive",
+						"files",
+						"1Nf1KnjtZT5l-CDVLhggXf3EHvHc9XCbT"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET Google Drive download concrete File",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/nickpozniak/Downloads/zwolnienie.pdf"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8000/drive/files/1Nf1KnjtZT5l-CDVLhggXf3EHvHc9XCbT/download",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"drive",
+						"files",
+						"1Nf1KnjtZT5l-CDVLhggXf3EHvHc9XCbT",
+						"download"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DELETE Google Drive concrete File",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/nickpozniak/Downloads/zwolnienie.pdf"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8000/drive/files/1Nf1KnjtZT5l-CDVLhggXf3EHvHc9XCbT",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"drive",
+						"files",
+						"1Nf1KnjtZT5l-CDVLhggXf3EHvHc9XCbT"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET Google Drive search file by filename",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/nickpozniak/Downloads/zwolnienie.pdf"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8000/drive/search?query=DS",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"drive",
+						"search"
+					],
+					"query": [
+						{
+							"key": "query",
+							"value": "DS"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Google Drive all Folders",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/nickpozniak/Downloads/zwolnienie.pdf"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:8000/drive/folders",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8000",
+					"path": [
+						"drive",
+						"folders"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

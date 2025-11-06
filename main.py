@@ -1,8 +1,9 @@
 import pprint
 import logging
-
 from fastapi import FastAPI
+from google_drive_api import router as drive_router
 from pydantic import BaseModel, ValidationError
+from backend.src.api.routes.upload_route import router as upload_router
 
 from backend.src.config.logging_config import configure_logging
 from settings import Settings
@@ -23,6 +24,8 @@ except ValidationError as e:
     raise SystemExit(1)
 
 app = FastAPI(title="DC25_bobry Dummy API")
+app.include_router(drive_router)
+app.include_router(upload_router)
 
 class Item(BaseModel):
     name: str
