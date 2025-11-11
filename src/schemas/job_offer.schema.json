@@ -1,33 +1,64 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Job offer",
+  "title": "Job offer (extended)",
   "type": "object",
   "properties": {
-    "title": {"type": "string"},
-    "obligatory_requirements": {
-      "type": "array",
-      "items": {"$ref": "#/$defs/requirement"}
+    "id": { "type": "string" },
+    "title": { "type": "string" },
+    "contractType": {
+      "type": "string",
+      "enum": ["UOP", "B2B", "UZ", "UOD"]
     },
-    "important_requirements": {
-      "type": "array",
-      "items": {"$ref": "#/$defs/requirement"}
+    "seniority": {
+      "type": "string",
+      "enum": ["Junior", "Mid", "Senior", "Lead", "Expert"]
     },
-    "optional_requirements": {
+    "description": { "type": "string" },
+    "status": {
+      "type": "string",
+      "enum": ["active", "paused", "closed"]
+    },
+    "publishDate": { "type": "string", "format": "date" },
+    "expiryDate": { "type": ["string", "null"], "format": "date" },
+    "requirements": {
       "type": "array",
-      "items": {"$ref": "#/$defs/requirement"}
+      "items": { "$ref": "#/$defs/requirement" }
     }
   },
+  "required": ["id", "title", "requirements"],
   "additionalProperties": false,
-  "required": ["title", "obligatory_requirements"],
   "$defs": {
     "requirement": {
       "type": "object",
       "properties": {
-        "name": {"type": "string"},
-        "proficiency": {"type": "number", "minimum": 1, "maximum": 5}
+        "id": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["SKILL", "EDUCATION", "EXPERIENCE", "CERT", "LANGUAGE", "OTHER"]
+        },
+        "name": { "type": "string" },
+        "priority": {
+          "type": "string",
+          "enum": ["REQUIRED", "IMPORTANT", "OPTIONAL"]
+        },
+        "weight": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        },
+        "synonyms": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": []
+        }
       },
-      "additionalProperties": false,
-      "required": ["name", "proficiency"]
+      "required": ["id", "type", "name", "priority", "weight"],
+      "additionalProperties": false
     }
   }
 }

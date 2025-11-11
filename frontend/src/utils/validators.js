@@ -1,0 +1,1 @@
+export const required = (val) => val != null && String(val).trim() !== ''
