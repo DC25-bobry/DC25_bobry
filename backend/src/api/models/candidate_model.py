@@ -1,5 +1,5 @@
 from typing import Optional, List
-from pydantic import BaseModel, ConfigDict, EmailStr, HttpUrl
+from pydantic import BaseModel, HttpUrl
 
 
 class EducationModel(BaseModel):
@@ -34,7 +34,7 @@ class SkillModel(BaseModel):
 class CandidateModel(BaseModel):
     name: str
     surname: str
-    email: EmailStr
+    email: str
     phone: str
     linkedin: Optional[HttpUrl] = None
 
