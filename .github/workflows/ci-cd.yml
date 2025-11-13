@@ -110,7 +110,7 @@ jobs:
         run: |
           set -e
           for i in {1..10}; do
-            if curl --fail --silent http://localhost:8000/; then
+            if curl --fail --silent http://localhost:8000/docs; then
               echo "app is up!"
               exit 0
             fi
@@ -124,7 +124,7 @@ jobs:
 
       - name: Smoke test root endpoint
         run: |
-          curl -f http://localhost:8000/ || (echo "[!] smoke test failed" && exit 1)
+          curl -f http://localhost:8000/docs || (echo "[!] smoke test failed" && exit 1)
 
       - name: Stop services
         if: always()
