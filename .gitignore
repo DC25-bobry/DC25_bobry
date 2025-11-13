@@ -8,4 +8,4 @@ backend/src/.env
 
 node_modules/
 dist/
-/.env
+/backend/src/.env
