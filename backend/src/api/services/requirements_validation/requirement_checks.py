@@ -38,6 +38,35 @@ def check_requirements(candidate: CandidateModel, job_offer: JobOfferModel) -> b
                     if not check_education_from_cv(candidate, requirement):
                         requirements_met = False
 
-
-
         return requirements_met
+
+def check_experience_from_cv(candidate: CandidateModel, requirement: Requirement) -> bool:
+    """
+    Basic experience check: match requirement.name to position or company name.
+    """
+    for exp in candidate.experience or []:
+        if requirement.name.lower() in (exp.position or "").lower():
+            return True
+        if requirement.name.lower() in (exp.company_name or "").lower():
+            return True
+    return False
+
+def check_requirement_met(candidate: CandidateModel, requirement: Requirement) -> bool:
+    """
+    Dispatch requirement checks by type. For CERT, LANGUAGE, OTHER we fall back to skill check.
+    """
+    if requirement.type == RequirementType.SKILL:
+        return check_skills_from_cv(candidate, requirement)
+    if requirement.type == RequirementType.LANGUAGE:
+        return check_skills_from_cv(candidate, requirement)
+    if requirement.type == RequirementType.OTHER:
+        return check_skills_from_cv(candidate, requirement)
+    if requirement.type == RequirementType.EDUCATION:
+        return check_education_from_cv(candidate, requirement)
+    if requirement.type == RequirementType.EXPERIENCE:
+        return check_experience_from_cv(candidate, requirement)
+    if requirement.type == RequirementType.CERT:
+        # treat certificates similarly to skills (match by name/synonyms)
+        return check_skills_from_cv(candidate, requirement)
+
+    return False
