@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from backend.src.services.document_parsing import UnsupportedFormatError
-from backend.src.services.document_parsing import ParserRegistry
+from backend.src.services.document_parsing.parser_registry import ParserRegistry
 
 
 @pytest.fixture()
