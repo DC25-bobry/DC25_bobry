@@ -4,6 +4,7 @@ from colorama import init as colorama_init, Fore, Style
 
 colorama_init()
 
+
 class ColoredFormatter(logging.Formatter):
     LEVEL_COLORS: Dict[int, str] = {
         logging.DEBUG: Fore.WHITE,
@@ -17,6 +18,7 @@ class ColoredFormatter(logging.Formatter):
         color = self.LEVEL_COLORS.get(record.levelno, Fore.WHITE)
         formatted = super().format(record)
         return f"{color}{formatted}{Style.RESET_ALL}"
+
 
 def configure_logging(level: int = logging.INFO) -> None:
     fmt = "%(asctime)s %(levelname)s %(name)s:\n%(message)s"

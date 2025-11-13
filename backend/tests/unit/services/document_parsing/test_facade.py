@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from backend.src.api.services.document_parsing import DocumentParsingService
+from backend.src.services.document_parsing import DocumentParsingService
 
 
 TEST_DIR = Path(__file__).resolve().parent
