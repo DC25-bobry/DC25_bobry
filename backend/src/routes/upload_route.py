@@ -1,15 +1,17 @@
-import logging
 import threading
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse
-from backend.src.api.utils.file_validation import validate_file
-from backend.src.api.services.document_parsing.document_parsing_service import DocumentParsingService
+from backend.src.utils.file_validation import validate_file
+from backend.src.services.document_parsing import DocumentParsingService
+
 
 def process_file(file_bytes: bytes, filename: str, content_type: str, parsing_service: DocumentParsingService):
     parsed_document = parsing_service.extract_text(content=file_bytes, content_type=content_type, filename=filename)
 
+
 router = APIRouter()
+
 
 @router.get("/upload", response_class=HTMLResponse)
 async def upload_form():
@@ -23,6 +25,7 @@ async def upload_form():
     </form>
     </html>
     """
+
 
 @router.post("/upload", response_class=HTMLResponse)
 async def upload_files(files: list[UploadFile] = File(...)):
@@ -41,7 +44,8 @@ async def upload_files(files: list[UploadFile] = File(...)):
             error_count += 1
             wrong_files += file.filename + " "
         else:
-            thread = threading.Thread(target=process_file, args=(file_bytes, file.filename, file.content_type, parsing_service))
+            thread = threading.Thread(target=process_file,
+                                      args=(file_bytes, file.filename, file.content_type, parsing_service))
             thread.start()
 
     response_content = f"Parsing {len(files) - error_count} files."
