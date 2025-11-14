@@ -18,3 +18,13 @@ services:
     env_file:
       - ./backend/src/.env
     working_dir: /app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: dc25-bobry-frontend:dev
+    container_name: dc25_bobry_frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
