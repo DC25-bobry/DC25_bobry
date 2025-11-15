@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.src.api.services.document_parsing.parsers import PdfParser
+from backend.src.services.document_parsing.parsers import PdfParser
 
 
 @pytest.fixture()

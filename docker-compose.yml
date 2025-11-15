@@ -1,15 +1,30 @@
+version: "3.8"
+
 services:
   app:
+    build:
+      context: .
+      dockerfile: backend/src/Dockerfile
     image: dc25-bobry:dev
-    build: .
-    container_name: DC25_bobry
+    container_name: dc25_bobry
     ports:
       - "8000:8000"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:8000/"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 5
     env_file:
-      - .env
+      - ./backend/src/.env
+    working_dir: /app
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: dc25-bobry-frontend:dev
+    container_name: dc25_bobry_frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped

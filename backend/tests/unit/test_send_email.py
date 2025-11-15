@@ -1,7 +1,4 @@
-import smtplib
-from email.mime.text import MIMEText
-from backend.src.config.smtp_config import SMTPConfig
-from backend.src.email.email_service import EmailService
+from backend.src.services.email.email_service import EmailService
 
 if __name__ == "__main__":
     mailer = EmailService()

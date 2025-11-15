@@ -2,21 +2,18 @@ import smtplib
 import logging
 from email.mime.text import MIMEText
 from pathlib import Path
-from datetime import datetime
-from backend.src.config.smtp_config import SMTPConfig
-from backend.src.email.email_generator import EmailGenerator
+from backend.src.config.settings.smtp import SMTPSettings
 
 
 class EmailService:
     def __init__(self):
-        self.host = SMTPConfig.HOST
-        self.port = SMTPConfig.PORT
-        self.user = SMTPConfig.USER
-        self.password = SMTPConfig.PASSWORD
-        self.email = SMTPConfig.EMAIL
-        self.encryption = SMTPConfig.ENCRYPTION
+        self.host = SMTPSettings.smtp_host
+        self.port = SMTPSettings.smtp_port
+        self.user = SMTPSettings.smtp_user
+        self.password = SMTPSettings.smtp_password
+        self.email = SMTPSettings.smtp_email
+        self.encryption = SMTPSettings.smtp_encryption
         self.logger = logging.getLogger(__name__)
-
 
     def _load_message_from_file(self, file_path: str) -> str:
         path = Path(file_path)
