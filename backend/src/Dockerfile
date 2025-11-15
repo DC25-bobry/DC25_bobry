@@ -17,7 +17,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY backend/src/requirements.txt /app/requirements.txt
 RUN python -m pip install --upgrade pip && \
-    pip install --no-cache-dir -r /app/requirements.txt
+    pip install --no-cache-dir -r /app/requirements.txt \
+    && python -m spacy download pl_core_news_sm \
+    && python -c "from sentence_transformers import SentenceTransformer; \
+     SentenceTransformer('sdadas/st-polish-paraphrase-from-distilroberta')"
 
 COPY backend /app/backend
 
