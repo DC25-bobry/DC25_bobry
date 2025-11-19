@@ -23,7 +23,7 @@ def check_education_from_cv(candidate: CandidateModel, requirement: Requirement)
             elif education.end_year == "" or education.end_year.lower() == "present":
                 return True
         else:
-            if current_year > education.end_year:
+            if current_year > int(education.end_year):
                 return True
     return False
 
