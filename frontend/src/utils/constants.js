@@ -1,10 +1,10 @@
 export const REQUIREMENT_TYPES = [
-  { value: 'SKILL', label: 'Umiejętność', icon: '🎯' },
-  { value: 'EDUCATION', label: 'Wykształcenie', icon: '🎓' },
-  { value: 'EXPERIENCE', label: 'Doświadczenie', icon: '💼' },
-  { value: 'CERT', label: 'Certyfikat', icon: '📜' },
-  { value: 'LANGUAGE', label: 'Język', icon: '🌍' },
-  { value: 'OTHER', label: 'Inne', icon: '📌' }
+  { value: 'SKILL', label: 'Umiejętność' },
+  { value: 'EDUCATION', label: 'Wykształcenie' },
+  { value: 'EXPERIENCE', label: 'Doświadczenie' },
+  { value: 'CERT', label: 'Certyfikat' },
+  { value: 'LANGUAGE', label: 'Język' },
+  { value: 'OTHER', label: 'Inne' }
 ]
 
 export const PRIORITIES = [
