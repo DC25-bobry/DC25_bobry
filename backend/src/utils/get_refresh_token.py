@@ -18,8 +18,9 @@ config = Config()
 
 
 def get_refresh_token() -> Optional[str]:
-    cid = config.google_drive.google_drive_client_id
-    secret = config.google_drive.google_drive_client_secret
+    gd = config.google_drive
+    cid = gd.GOOGLE_DRIVE_CLIENT_ID
+    secret = gd.GOOGLE_DRIVE_CLIENT_SECRET
 
     if not cid or not secret:
         logger.error("Missing GOOGLE_DRIVE_CLIENT_ID or GOOGLE_DRIVE_CLIENT_SECRET in .env")
