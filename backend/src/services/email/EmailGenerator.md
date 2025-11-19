@@ -8,14 +8,14 @@ If you want to use the EmailGenerator class to create a beautiful e-mail to reje
 The class is structured according to the builder pattern meaning it looks cool as f*ck in your code:
 
 ```python
-from backend.src.email.email_generator import EmailGenerator
+from backend.src.services.email.email_generator import EmailGenerator
 
 generator = EmailGenerator()
 
-email = generator\
-        .set_template(EmailGenerator.RECEIVED)\
-        .set_name("Future Employee")\
-        .generate()
+email = generator
+    .set_template(EmailGenerator.RECEIVED)
+    .set_name("Future Employee")
+    .generate()
 ```
 
 But because it's an email *generator* not an email *builder* cause who tf builds e-mails I will hence call it a generator pattern.

@@ -1,9 +1,7 @@
-import os
-from enum import Enum
+from pathlib import Path
 
 import jinja2
 from jinja2 import FileSystemLoader
-from backend.src.utils.util_commands import get_app_root
 
 
 class EmailGenerator:
@@ -15,7 +13,7 @@ class EmailGenerator:
 
     def __init__(self):
         self._env = jinja2.Environment(
-            loader=FileSystemLoader(get_app_root() / "backend/src/email/templates/", followlinks=True))
+            loader=FileSystemLoader(Path(__file__), "/templates/", followlinks=True))
         self._templates = {EmailGenerator.RECEIVED: "template_received.html",
                            EmailGenerator.APPROVED: "template_approval.html",
                            EmailGenerator.REJECTED: "template_rejection.html",
