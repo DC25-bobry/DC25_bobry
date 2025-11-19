@@ -4,8 +4,8 @@ from pydantic import BaseModel, HttpUrl
 
 class EducationModel(BaseModel):
     school_name: str
-    start_year: int
-    end_year: int
+    start_year: str
+    end_year: str
     field_of_study: str
 
     model_config = {"extra": "forbid"}
