@@ -12,8 +12,8 @@ class EducationModel(BaseModel):
 
 class ExperienceModel(BaseModel):
     company_name: str
-    start_year: int
-    end_year: int
+    start_year: str
+    end_year: str
     position: str
 
     model_config = {"extra": "forbid"}

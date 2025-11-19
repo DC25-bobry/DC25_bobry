@@ -18,15 +18,22 @@ def check_education_from_cv(candidate: CandidateModel, requirement: Requirement)
     current_year = datetime.today().year
     for education in candidate.educations or []:
         if requirement.name.lower() == "student":
-            if current_year < education.end_year:
+            if int(current_year) < int(education.end_year):
+                return True
+            elif education.end_year == "" or education.end_year.lower() == "present":
                 return True
         else:
             if current_year > education.end_year:
                 return True
     return False
 
+# after talking with the one and only Scrum Master we decided to skip Experience checks
+
 def check_requirements(candidate: CandidateModel, job_offer: JobOfferModel) -> bool:
         requirements_met = True
+
+        if not candidate.requirements or not candidate.dental_parameters.valid_dental_checkup:
+            requirements_met = False
 
         requirements = separate_required_requirements(job_offer)
         for requirement in requirements:
