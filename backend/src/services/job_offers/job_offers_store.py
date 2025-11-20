@@ -35,7 +35,7 @@ class GoogleDriveJobOfferStore:
 
         for f in files:
             if f.get("name") == self.FOLDER_NAME and \
-               f.get("mime_type") == "application/vnd.google-apps.folder":
+                    f.get("mimeType") == "application/vnd.google-apps.folder":
                 return f["id"]
 
         return None

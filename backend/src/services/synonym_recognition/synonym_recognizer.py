@@ -1,34 +1,75 @@
-from typing import List
-import spacy
+from __future__ import annotations
+
+from typing import List, Tuple
+
 import re
+import spacy
 from sentence_transformers import SentenceTransformer, util
 
 
 class SynonymRecognizer:
+    _nlp = None
+    _model = None
+
+    @classmethod
+    def _get_nlp(cls):
+        if cls._nlp is None:
+            cls._nlp = spacy.load("pl_core_news_sm")
+        return cls._nlp
+
+    @classmethod
+    def _get_model(cls):
+        if cls._model is None:
+            cls._model = SentenceTransformer(
+                "sdadas/st-polish-paraphrase-from-distilroberta"
+            )
+        return cls._model
+
     def __init__(self, text: str, threshold: float = 0.7):
-        self.__nlp = spacy.load('pl_core_news_sm')
-        self.__filtered_tokens = self.__preprocess_text(text)
-        self.__model = SentenceTransformer('sdadas/st-polish-paraphrase-from-distilroberta')
-        self.__tokens_embedding = self.__model.encode([token[1] for token in self.__filtered_tokens])
-        self.__threshold = threshold
+        self._nlp = self._get_nlp()
+        self._model = self._get_model()
+        self._threshold = threshold
 
-    def __preprocess_text(self, text: str) -> list[tuple[str, str]]:
-        cleaned_text = ' '.join([re.sub(r'[^\w\d\s]', '', token.lower()) for token in text.split()])
+        self._filtered_tokens: List[Tuple[str, str]] = self._preprocess_text(text)
 
-        doc = self.__nlp(cleaned_text)
+        if self._filtered_tokens:
+            self._tokens_embedding = self._model.encode(
+                [token[1] for token in self._filtered_tokens],
+                convert_to_tensor=True,
+            )
+        else:
+            self._tokens_embedding = None
 
-        return [(token.text, token.lemma_) for token in doc if
-                not token.is_stop and not token.is_punct and not token.is_space and not token.is_digit]
+    def _preprocess_text(self, text: str) -> List[Tuple[str, str]]:
+        cleaned_text = " ".join(
+            [re.sub(r"[^\w\d\s]", "", token.lower()) for token in text.split()]
+        )
+        doc = self._nlp(cleaned_text)
+
+        return [
+            (token.text, token.lemma_)
+            for token in doc
+            if not token.is_stop
+            and not token.is_punct
+            and not token.is_space
+            and not token.is_digit
+        ]
 
     def find_synonyms(self, word: str) -> List[str]:
-        word_embedding = self.__model.encode(word)
-        similarities = util.cos_sim(word_embedding, self.__tokens_embedding)[0]
+        if self._tokens_embedding is None or not self._filtered_tokens:
+            return []
+
+        word_embedding = self._model.encode(word, convert_to_tensor=True)
+        similarities = util.cos_sim(word_embedding, self._tokens_embedding)[0]
         sorted_indices = similarities.argsort(descending=True)
 
-        possible_synonyms = []
+        possible_synonyms: List[str] = []
 
         for idx in sorted_indices:
-            if similarities[idx] >= self.__threshold:
-                possible_synonyms.append(self.__filtered_tokens[idx][0])
+            sim = float(similarities[idx])
+            if sim >= self._threshold:
+                possible_synonyms.append(self._filtered_tokens[int(idx)][0])
+            else:
+                break
 
         return possible_synonyms

@@ -17,6 +17,7 @@ from backend.src.services.google_drive_connect import (
     download_file,
 )
 from backend.src.models.candidate_profile import CandidateProfile
+from backend.src.models.candidate_matching import JobMatch
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,8 @@ logger = logging.getLogger(__name__)
 class CandidateRecord(BaseModel):
     id: str
     profile: CandidateProfile
+    job_matches: List[JobMatch] = []
+    global_rejection_reason: Optional[str] = None
     cv_drive_file_id: Optional[str] = None
 
     class Config:
@@ -44,7 +47,7 @@ class GoogleDriveCandidateStore:
         for f in files:
             if (
                 f.get("name") == self.FOLDER_NAME
-                and f.get("mime_type") == "application/vnd.google-apps.folder"
+                and f.get("mimeType") == "application/vnd.google-apps.folder"
             ):
                 return f["id"]
 
@@ -89,7 +92,9 @@ class GoogleDriveCandidateStore:
                 try:
                     records.append(CandidateRecord(**item))
                 except ValidationError as e:
-                    logger.error("Błędny rekord kandydata w candidates.json, pomijam: %s", e)
+                    logger.error(
+                        "Błędny rekord kandydata w candidates.json, pomijam: %s", e
+                    )
                     continue
             return records
 
@@ -100,7 +105,12 @@ class GoogleDriveCandidateStore:
     def save_all(self, records: List[CandidateRecord]) -> None:
         with tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8") as tmp:
             tmp_path = tmp.name
-            json.dump([r.dict() for r in records], tmp, ensure_ascii=False, indent=2)
+            json.dump(
+                [r.model_dump() for r in records],
+                tmp,
+                ensure_ascii=False,
+                indent=2,
+            )
 
         try:
             existing_file_id = self._find_json_file()
@@ -125,13 +135,17 @@ class GoogleDriveCandidateStore:
     def append_candidate(
         self,
         profile: CandidateProfile,
+        job_matches: Optional[List[JobMatch]] = None,
         cv_drive_file_id: Optional[str] = None,
+        global_rejection_reason: Optional[str] = None,
     ) -> CandidateRecord:
         records = self.load_all()
 
         new_record = CandidateRecord(
             id=str(uuid.uuid4()),
             profile=profile,
+            job_matches=job_matches or [],
+            global_rejection_reason=global_rejection_reason,
             cv_drive_file_id=cv_drive_file_id,
         )
 

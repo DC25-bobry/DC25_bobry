@@ -22,7 +22,7 @@ def _ensure_cv_folder(service: Resource) -> str:
     for f in files:
         if (
             f.get("name") == "CV"
-            and f.get("mime_type") == "application/vnd.google-apps.folder"
+            and f.get("mimeType") == "application/vnd.google-apps.folder"
         ):
             return f["id"]
 
