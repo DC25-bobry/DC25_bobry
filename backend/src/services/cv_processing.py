@@ -1,16 +1,26 @@
+from __future__ import annotations
+
 import logging
+from dataclasses import dataclass
 from typing import List, Optional
 
 from backend.src.models.candidate_profile import CandidateProfile
 from backend.src.models.candidate_matching import JobMatch
 from backend.src.models.job_offers_model import JobOffer
 from backend.src.services.candidate_extraction.candidate_extractor import CandidateExtractor
-from backend.src.services.candidate_storage import GoogleDriveCandidateStore
+from backend.src.services.candidate_storage import GoogleDriveCandidateStore, CandidateRecord
 from backend.src.services.job_selection import JobSelectionService
 from backend.src.services.job_scoring import JobMatchScorer
 from backend.src.services.synonym_recognition import SynonymRecognizer
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class CandidateProcessingResult:
+    record: CandidateRecord
+    cv_text: str
+    file_name: str
 
 
 def process_file(
@@ -20,9 +30,11 @@ def process_file(
     parsing_service,
     cv_drive_file_id: Optional[str],
     jobs: List[JobOffer],
-) -> None:
+) -> CandidateProcessingResult:
 
-    parsed_document = parsing_service.extract_text(file_bytes, filename=filename, content_type=content_type)
+    parsed_document = parsing_service.extract_text(
+        file_bytes, filename=filename, content_type=content_type
+    )
     cv_text: str = parsed_document.text
 
     extractor = CandidateExtractor()
@@ -58,4 +70,10 @@ def process_file(
         record.id,
         len(record.job_matches),
         global_reason,
+    )
+
+    return CandidateProcessingResult(
+        record=record,
+        cv_text=cv_text,
+        file_name=filename,
     )

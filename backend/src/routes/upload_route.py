@@ -1,80 +1,190 @@
-import threading
+from __future__ import annotations
+
+import asyncio
 import logging
-from typing import List
+from typing import List, Optional, Dict, Any
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, UploadFile, File, HTTPException, status, Query
+from fastapi.responses import JSONResponse
 
-from backend.src.models.job_offers_model import JobOffer
-from backend.src.routes.job_offers_route import get_repo
-from backend.src.services.cv_storage import save_cv_file_to_drive
-from backend.src.services.job_offers.job_offers_repository import JobOfferRepository
-from backend.src.utils.file_validation import validate_file
 from backend.src.services.document_parsing import DocumentParsingService
-from backend.src.services.cv_processing import process_file
+from backend.src.services.job_offers.job_offers_store import GoogleDriveJobOfferStore
+from backend.src.utils.file_validation import validate_file
+from backend.src.services.cv_storage import save_cv_file_to_drive
+from backend.src.services.cv_processing import (
+    process_file,
+    CandidateProcessingResult,
+)
+from backend.src.models.job_offers_model import JobOffer
 
-
-router = APIRouter()
 logger = logging.getLogger(__name__)
+router = APIRouter()
 
 
-@router.post("/upload", response_class=HTMLResponse)
+@router.post("/upload")
 async def upload_files(
+    top_n: int = Query(3, ge=1, le=20),
     files: List[UploadFile] = File(...),
-    job_repo: JobOfferRepository = Depends(get_repo),
 ):
     if not files:
         raise HTTPException(status_code=400, detail="No files sent")
 
-    jobs: List[JobOffer] = await job_repo.list()
-
     parsing_service = DocumentParsingService()
-    error_count = 0
-    wrong_files = ""
 
-    for file in files:
-        file_bytes = await file.read()
+    job_store = GoogleDriveJobOfferStore()
+    offers_data = await job_store.load_all()
+    jobs: List[JobOffer] = [JobOffer(**o) for o in offers_data]
 
-        file_valid, _ = validate_file(file_bytes, file.filename, file.content_type)
-        if not file_valid:
-            error_count += 1
-            wrong_files += file.filename + " "
-            continue
+    if not jobs:
+        logger.warning("Brak ofert pracy w Google Drive (job_offers.json pusty).")
 
-        try:
-            drive_file_id = save_cv_file_to_drive(
-                file_bytes=file_bytes,
-                filename=file.filename,
-                content_type=file.content_type,
+    sem = asyncio.Semaphore(10)
+
+    async def handle_single_file(file: UploadFile) -> Optional[CandidateProcessingResult]:
+        async with sem:
+            file_bytes = await file.read()
+
+            is_valid, info = validate_file(
+                file_bytes, file.filename, file.content_type
             )
-            logger.info(
-                "CV %s zapisane w Google Drive jako id=%s",
-                file.filename,
-                drive_file_id,
-            )
-        except Exception as e:
-            logger.exception("Błąd podczas zapisu CV do Google Drive: %s", e)
-            error_count += 1
-            wrong_files += file.filename + " "
-            continue
+            if not is_valid:
+                logger.warning(
+                    "Plik %s odrzucony na etapie walidacji: %s",
+                    file.filename,
+                    info,
+                )
+                return None
 
-        thread = threading.Thread(
-            target=process_file,
-            args=(
+            try:
+                cv_drive_file_id = save_cv_file_to_drive(
+                    file_bytes=file_bytes,
+                    filename=file.filename,
+                    content_type=file.content_type,
+                )
+            except Exception as e:
+                logger.exception(
+                    "Błąd zapisu CV %s do Google Drive: %s", file.filename, e
+                )
+                return None
+
+            result: CandidateProcessingResult = await asyncio.to_thread(
+                process_file,
                 file_bytes,
                 file.filename,
                 file.content_type,
                 parsing_service,
-                drive_file_id,
+                cv_drive_file_id,
                 jobs,
-            ),
-            daemon=True,
+            )
+            return result
+
+    tasks = [handle_single_file(f) for f in files]
+    raw_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    candidate_results: List[CandidateProcessingResult] = []
+    for res in raw_results:
+        if isinstance(res, Exception):
+            logger.exception("Błąd wewnętrzny podczas przetwarzania CV: %s", res)
+            continue
+        if res is None:
+            continue
+        candidate_results.append(res)
+
+    total_cv = len(candidate_results)
+
+    jobs_map: Dict[str, Dict[str, Any]] = {}
+    rejected_list: List[Dict[str, Any]] = []
+
+    for res in candidate_results:
+        record = res.record
+        profile = record.profile
+        matches = record.job_matches or []
+
+        global_reason = record.global_rejection_reason
+
+        if global_reason or not matches:
+            rejected_list.append(
+                {
+                    "candidate_id": record.id,
+                    "file_name": res.file_name,
+                    "reason": global_reason or "Brak dopasowania do ofert",
+                }
+            )
+            continue
+
+        sorted_matches = sorted(matches, key=lambda jm: jm.score_percent, reverse=True)
+        best = sorted_matches[0]
+
+        job_id = best.job_id
+        job_title = best.job_title
+
+        if job_id not in jobs_map:
+            jobs_map[job_id] = {
+                "job_id": job_id,
+                "job_title": job_title,
+                "candidates": [],
+            }
+
+        def _req_list(reqs):
+            result = []
+            for r in reqs or []:
+                name = getattr(r, "name", None) or getattr(r, "requirement_name", None)
+                weight = getattr(r, "weight", None)
+                result.append(
+                    {
+                        "name": name,
+                        "weight": weight,
+                    }
+                )
+            return result
+
+        matched_reqs = _req_list(best.matched_requirements)
+        unmatched_reqs = _req_list(
+            (best.missing_required or []) + (best.missing_optional or [])
         )
-        thread.start()
 
-    processed_count = len(files) - error_count
-    response_content = f"Parsing {processed_count} files."
-    if error_count > 0:
-        response_content += f"\nSkipped files: {wrong_files}"
+        other_matches = [
+            {
+                "job_title": m.job_title,
+                "score": m.score_percent,
+            }
+            for m in sorted_matches[1:]
+        ]
 
-    return HTMLResponse(content=response_content)
+        candidate_view = {
+            "candidate_id": record.id,
+            "file_name": res.file_name,
+            "score": best.score_percent,
+            "total_score": best.total_score,
+            "max_score": best.max_score,
+            "matched_requirements": matched_reqs,
+            "unmatched_requirements": unmatched_reqs,
+            "other_matches": other_matches,
+            "rank": None,
+            "is_top": False,
+        }
+
+        jobs_map[job_id]["candidates"].append(candidate_view)
+
+    matched_cv = 0
+    for job in jobs_map.values():
+        cands = job["candidates"]
+        cands.sort(key=lambda c: c["score"], reverse=True)
+
+        for idx, c in enumerate(cands, start=1):
+            c["rank"] = idx
+            c["is_top"] = idx <= top_n
+
+        matched_cv += len(cands)
+
+    rejected_cv = len(rejected_list)
+
+    response_body = {
+        "total_cv": total_cv,
+        "matched_cv": matched_cv,
+        "rejected_cv": rejected_cv,
+        "jobs": list(jobs_map.values()),
+        "rejected": rejected_list,
+    }
+
+    return JSONResponse(status_code=status.HTTP_200_OK, content=response_body)
