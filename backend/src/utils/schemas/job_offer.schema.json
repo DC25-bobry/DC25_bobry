@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Job offer (extended)",
+  "title": "Job offer (clean)",
   "type": "object",
   "properties": {
     "id": { "type": "string" },
@@ -16,16 +16,18 @@
     "description": { "type": "string" },
     "status": {
       "type": "string",
-      "enum": ["active", "paused", "closed"]
+      "enum": ["active", "paused", "closed"],
+      "default": "active"
     },
     "publishDate": { "type": "string", "format": "date" },
     "expiryDate": { "type": ["string", "null"], "format": "date" },
     "requirements": {
       "type": "array",
+      "minItems": 1,
       "items": { "$ref": "#/$defs/requirement" }
     }
   },
-  "required": ["id", "title", "requirements"],
+  "required": ["title", "requirements"],
   "additionalProperties": false,
   "$defs": {
     "requirement": {
@@ -49,15 +51,11 @@
         "keywords": {
           "type": "array",
           "items": { "type": "string" },
-          "default": []
-        },
-        "synonyms": {
-          "type": "array",
-          "items": { "type": "string" },
+          "uniqueItems": true,
           "default": []
         }
       },
-      "required": ["id", "type", "name", "priority", "weight"],
+      "required": ["type", "name", "priority", "weight"],
       "additionalProperties": false
     }
   }
