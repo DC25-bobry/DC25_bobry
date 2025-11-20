@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 
 from pydantic import ValidationError
 
-from backend.src.services.job_offers.job_offers_model import JobOffer, JobOfferCreate, Requirement
+from backend.src.models.job_offers_model import JobOffer, JobOfferCreate, Requirement
 from backend.src.services.job_offers.job_offers_store import GoogleDriveJobOfferStore
 
 

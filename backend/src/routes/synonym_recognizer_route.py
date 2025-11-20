@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter
 from pydantic import BaseModel
-from backend.src.api.services.synonym_recognition import SynonymRecognizer
+from backend.src.services.synonym_recognition import SynonymRecognizer
 
 router = APIRouter()
 

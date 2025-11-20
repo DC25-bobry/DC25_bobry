@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from typing import List
 
-from backend.src.services.job_offers.job_offers_model import JobOffer, JobOfferCreate
+from backend.src.models.job_offers_model import JobOffer, JobOfferCreate
 from backend.src.services.job_offers.job_offers_repository import JobOfferRepository
 from backend.src.services.job_offers.job_offers_store import GoogleDriveJobOfferStore
 

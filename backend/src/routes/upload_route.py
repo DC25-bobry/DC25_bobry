@@ -1,7 +1,10 @@
 import threading
+import logging
 
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse
+
+from backend.src.services.cv_storage import save_cv_file_to_drive
 from backend.src.utils.file_validation import validate_file
 from backend.src.services.document_parsing import DocumentParsingService
 
@@ -11,21 +14,7 @@ def process_file(file_bytes: bytes, filename: str, content_type: str, parsing_se
 
 
 router = APIRouter()
-
-
-@router.get("/upload", response_class=HTMLResponse)
-async def upload_form():
-    return """
-    <!doctype html>
-    <title>Upload new Files</title>
-    <h1>Upload new Files</h1>
-    <form action="/upload" method="post" enctype="multipart/form-data">
-      <input type="file" name="files" multiple required>
-      <input type="submit" value="Upload">
-    </form>
-    </html>
-    """
-
+logger = logging.getLogger(__name__)
 
 @router.post("/upload", response_class=HTMLResponse)
 async def upload_files(files: list[UploadFile] = File(...)):
@@ -43,12 +32,35 @@ async def upload_files(files: list[UploadFile] = File(...)):
         if not file_valid:
             error_count += 1
             wrong_files += file.filename + " "
-        else:
-            thread = threading.Thread(target=process_file,
-                                      args=(file_bytes, file.filename, file.content_type, parsing_service))
-            thread.start()
+            continue
 
-    response_content = f"Parsing {len(files) - error_count} files."
+        try:
+            drive_file_id = save_cv_file_to_drive(
+                file_bytes=file_bytes,
+                filename=file.filename,
+                content_type=file.content_type,
+            )
+            logger.info(
+                "CV %s zapisane w Google Drive jako id=%s",
+                file.filename,
+                drive_file_id,
+            )
+        except Exception as e:
+            logger.exception("Błąd podczas zapisu CV do Google Drive: %s", e)
+            error_count += 1
+            wrong_files += file.filename + " "
+            continue
+
+        thread = threading.Thread(
+            target=process_file,
+            args=(file_bytes, file.filename, file.content_type, parsing_service),
+            daemon=True,
+        )
+        thread.start()
+
+    processed_count = len(files) - error_count
+    response_content = f"Parsing {processed_count} files."
     if error_count > 0:
         response_content += f"\nSkipped files: {wrong_files}"
+
     return HTMLResponse(content=response_content)

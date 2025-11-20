@@ -3,20 +3,20 @@
   "title": "Candidate Profile",
   "type": "object",
   "properties": {
-    "name": {"type": "string"},
-    "surname": {"type": "string"},
-    "email": {"type": "string", "format": "email"},
-    "phone_number": {"type": "string"},
-    "linkedin_profile": {"type": "string", "format": "uri"},
+    "name": { "type": "string" },
+    "surname": { "type": "string" },
+    "email": { "type": "string", "format": "email" },
+    "phone_number": { "type": "string" },
+    "linkedin_profile": { "type": "string", "format": "uri" },
     "education": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "school_name": {"type" : "string"},
-          "start_year": {"type": "integer"},
-          "end_year": {"type": "integer"},
-          "field_of_study": {"type": "string"}
+          "school_name": { "type": "string" },
+          "start_year": { "type": "integer" },
+          "end_year": { "type": "integer" },
+          "field_of_study": { "type": "string" }
         },
         "required": ["school_name", "start_year", "end_year", "field_of_study"],
         "additionalProperties": false
@@ -28,34 +28,24 @@
       "items": {
         "type": "object",
         "properties": {
-          "company_name": {"type" : "string"},
-          "start_year": {"type": "integer"},
-          "end_year": {"type": "integer"},
-          "position": {"type": "string"}
+          "company_name": { "type": "string" },
+          "start_year": { "type": "integer" },
+          "end_year": { "type": "integer" },
+          "position": { "type": "string" }
         },
         "required": ["company_name", "start_year", "end_year", "position"],
         "additionalProperties": false
       },
       "uniqueItems": true
     },
-    "dental_parameters": {
-      "type": "object",
-      "properties": {
-        "valid_dental_checkup": {"type": "boolean"},
-        "teeth_spacing": {"type": "number"}
-      },
-      "required": ["valid_dental_checkup", "teeth_spacing"],
-      "additionalProperties": false
-    },
-    "health_certificate": {"type": "boolean"},
     "skills": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
-          "name": {"type": "string"},
-          "category": {"type": "string"},
-          "proficiency" : {"type": "number", "minimum": 1, "maximum": 5}
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "proficiency": { "type": "number", "minimum": 1, "maximum": 5 }
         },
         "required": ["name", "category"],
         "additionalProperties": false
@@ -63,6 +53,6 @@
       "uniqueItems": true
     }
   },
-  "required": ["name", "surname", "email", "phone_number", "dental_parameters", "health_certificate"],
+  "required": ["name", "surname", "email", "phone_number"],
   "additionalProperties": false
 }
