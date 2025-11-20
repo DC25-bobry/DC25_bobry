@@ -14,11 +14,6 @@ class JobSelectionResult:
 
 
 class JobSelectionService:
-    GENERIC_POSITION_PATTERN = re.compile(
-        r"(stanowisk[oa]|aplikuj[ęe]\s+na|aplikacja\s+na|position)\s*:?\s*(.+)",
-        re.IGNORECASE,
-    )
-
     def select_jobs(
         self,
         cv_text: str,
@@ -35,20 +30,6 @@ class JobSelectionService:
                     explicit_title_matched=True,
                     global_rejection_reason=None,
                 )
-
-        m = self.GENERIC_POSITION_PATTERN.search(cv_text)
-        if m:
-            raw_title = m.group(2).strip()
-            reason = (
-                f"CV zawiera aplikację na stanowisko '{raw_title}', "
-                f"którego nie ma w aktualnie otwartych ofertach."
-            )
-            return JobSelectionResult(
-                jobs_to_consider=[],
-                explicit_title=raw_title,
-                explicit_title_matched=False,
-                global_rejection_reason=reason,
-            )
 
         return JobSelectionResult(
             jobs_to_consider=active_jobs,
