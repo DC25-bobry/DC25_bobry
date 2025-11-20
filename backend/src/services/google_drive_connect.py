@@ -19,9 +19,9 @@ config = Config()
 
 
 def get_service(scopes: List[str] = SCOPES) -> Resource:
-    client_id: Optional[str] = config.google_drive.google_drive_client_id
-    client_secret: Optional[str] = config.google_drive.google_drive_client_secret
-    refresh_token: Optional[str] = config.google_drive.google_refresh_token
+    client_id: Optional[str] = config.google_drive.GOOGLE_DRIVE_CLIENT_ID
+    client_secret: Optional[str] = config.google_drive.GOOGLE_DRIVE_CLIENT_SECRET
+    refresh_token: Optional[str] = config.google_drive.GOOGLE_REFRESH_TOKEN
 
     if not client_id or not client_secret or not refresh_token:
         raise ValueError(
