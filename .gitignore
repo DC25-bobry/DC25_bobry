@@ -9,3 +9,4 @@ backend/src/.env
 node_modules/
 dist/
 /backend/src/.env
+.env

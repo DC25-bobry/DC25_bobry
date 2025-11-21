@@ -1,3 +1,4 @@
+# backend/src/routes/upload_route.py
 from __future__ import annotations
 
 import asyncio
@@ -49,9 +50,12 @@ async def upload_files(
             )
             if not is_valid:
                 logger.warning(
-                    "Plik %s odrzucony na etapie walidacji: %s",
-                    file.filename,
-                    info,
+                    "File rejected during validation",
+                    extra={
+                        "event": "cv_validation_rejected",
+                        "file_name": file.filename,
+                        "reason": info,
+                    },
                 )
                 return None
 
@@ -63,7 +67,11 @@ async def upload_files(
                 )
             except Exception as e:
                 logger.exception(
-                    "Błąd zapisu CV %s do Google Drive: %s", file.filename, e
+                    "Failed to store CV in Google Drive",
+                    extra={
+                        "event": "cv_drive_store_error",
+                        "file_name": file.filename,
+                    },
                 )
                 return None
 
@@ -84,7 +92,10 @@ async def upload_files(
     candidate_results: List[CandidateProcessingResult] = []
     for res in raw_results:
         if isinstance(res, Exception):
-            logger.exception("Internal error occured when processing CV: %s", res)
+            logger.exception(
+                "Internal error occurred when processing CV",
+                extra={"event": "cv_processing_error"},
+            )
             continue
         if res is None:
             continue
@@ -97,22 +108,44 @@ async def upload_files(
 
     for res in candidate_results:
         record = res.record
-        profile = record.profile
         matches = record.job_matches or []
 
         global_reason = record.global_rejection_reason
 
-        if global_reason or not matches:
+        valid_matches = [m for m in matches if getattr(m, "status", None) == "MATCHED"]
+
+        if global_reason or not valid_matches:
+            reason = global_reason
+
+            if not reason:
+                rejection_reasons: List[str] = []
+                for m in matches:
+                    rr = getattr(m, "rejection_reasons", None)
+                    if rr:
+                        rejection_reasons.extend(rr)
+                if rejection_reasons:
+                    seen = set()
+                    unique = []
+                    for r in rejection_reasons:
+                        if r not in seen:
+                            seen.add(r)
+                            unique.append(r)
+                    reason = "; ".join(unique)
+                else:
+                    reason = "Brak dopasowania do ofert"
+
             rejected_list.append(
                 {
                     "candidate_id": record.id,
                     "file_name": res.file_name,
-                    "reason": global_reason or "Brak dopasowania do ofert",
+                    "reason": reason,
                 }
             )
             continue
 
-        sorted_matches = sorted(matches, key=lambda jm: jm.score_percent, reverse=True)
+        sorted_matches = sorted(
+            valid_matches, key=lambda jm: jm.score_percent, reverse=True
+        )
         best = sorted_matches[0]
 
         job_id = best.job_id
@@ -128,7 +161,9 @@ async def upload_files(
         def _req_list(reqs):
             result = []
             for r in reqs or []:
-                name = getattr(r, "name", None) or getattr(r, "requirement_name", None)
+                name = getattr(r, "name", None) or getattr(
+                    r, "requirement_name", None
+                )
                 weight = getattr(r, "weight", None)
                 result.append(
                     {
