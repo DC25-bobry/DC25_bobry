@@ -10,6 +10,7 @@ from backend.src.routes.google_drive_route import router as drive_router
 from backend.src.routes.upload_route import router as upload_router
 from backend.src.routes.job_offers_route import router as job_offers_router
 from backend.src.routes.synonym_recognizer_route import router as synonym_recognizer_router
+from backend.src.routes.candidates_route import router as candidates_router
 
 configure_logging()
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ app.include_router(drive_router)
 app.include_router(upload_router)
 app.include_router(synonym_recognizer_router)
 app.include_router(job_offers_router)
+app.include_router(candidates_router)
 
 
 logger.info("🚀 Backend started on %s:%s", config.core.HOST, config.core.PORT)

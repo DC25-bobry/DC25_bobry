@@ -60,4 +60,17 @@ def save_cv_file_to_drive(
         return file_id
     finally:
         if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+            try:
+                os.remove(tmp_path)
+            except PermissionError as e:
+                logger.warning(
+                    "Nie udało się usunąć pliku tymczasowego %s: %s",
+                    tmp_path,
+                    e,
+                )
+            except OSError as e:
+                logger.warning(
+                    "Błąd podczas usuwania pliku tymczasowego %s: %s",
+                    tmp_path,
+                    e,
+                )

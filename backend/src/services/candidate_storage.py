@@ -5,9 +5,10 @@ import logging
 import os
 import tempfile
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Any
 
 from googleapiclient.discovery import Resource
+from googleapiclient.http import MediaFileUpload
 from pydantic import BaseModel, ValidationError
 
 from backend.src.services.google_drive_connect import (
@@ -17,7 +18,6 @@ from backend.src.services.google_drive_connect import (
     download_file,
 )
 from backend.src.models.candidate_profile import CandidateProfile
-from backend.src.models.candidate_matching import JobMatch
 
 logger = logging.getLogger(__name__)
 
@@ -25,9 +25,10 @@ logger = logging.getLogger(__name__)
 class CandidateRecord(BaseModel):
     id: str
     profile: CandidateProfile
-    job_matches: List[JobMatch] = []
-    global_rejection_reason: Optional[str] = None
     cv_drive_file_id: Optional[str] = None
+
+    job_matches: Optional[list] = None
+    global_rejection_reason: Optional[str] = None
 
     class Config:
         extra = "forbid"
@@ -59,20 +60,35 @@ class GoogleDriveCandidateStore:
         created = self.service.files().create(body=metadata, fields="id").execute()
         return created["id"]
 
-    def _find_json_file(self) -> Optional[str]:
-        query = f"'{self.folder_id}' in parents"
-        files = (
+    def _list_json_files(self) -> List[dict[str, Any]]:
+        query = (
+            f"'{self.folder_id}' in parents "
+            f"and name='{self.FILE_NAME}' "
+            f"and mimeType='application/json' "
+            f"and trashed=false"
+        )
+        resp = (
             self.service.files()
             .list(q=query, fields="files(id, name, mimeType)")
             .execute()
-            .get("files", [])
         )
+        return resp.get("files", [])
 
-        for f in files:
-            if f.get("name") == self.FILE_NAME:
-                return f["id"]
+    def _find_json_file(self) -> Optional[str]:
+        files = self._list_json_files()
+        if not files:
+            return None
 
-        return None
+        if len(files) > 1:
+            logger.warning(
+                "Znaleziono %d kopii %s w folderze '%s'. "
+                "Zostawiam pierwszą (id=%s) – duplikaty zostaną usunięte przy zapisie.",
+                len(files),
+                self.FILE_NAME,
+                self.FOLDER_NAME,
+                files[0]["id"],
+            )
+        return files[0]["id"]
 
     def load_all(self) -> List[CandidateRecord]:
         file_id = self._find_json_file()
@@ -93,7 +109,8 @@ class GoogleDriveCandidateStore:
                     records.append(CandidateRecord(**item))
                 except ValidationError as e:
                     logger.error(
-                        "Błędny rekord kandydata w candidates.json, pomijam: %s", e
+                        "Błędny rekord kandydata w candidates.json, pomijam: %s",
+                        e,
                     )
                     continue
             return records
@@ -103,28 +120,53 @@ class GoogleDriveCandidateStore:
                 os.remove(tmp_path)
 
     def save_all(self, records: List[CandidateRecord]) -> None:
-        with tempfile.NamedTemporaryFile(delete=False, mode="w", encoding="utf-8") as tmp:
+        with tempfile.NamedTemporaryFile(
+            delete=False, mode="w", encoding="utf-8"
+        ) as tmp:
             tmp_path = tmp.name
-            json.dump(
-                [r.model_dump() for r in records],
-                tmp,
-                ensure_ascii=False,
-                indent=2,
-            )
+            json.dump([r.dict() for r in records], tmp, ensure_ascii=False, indent=2)
 
         try:
-            existing_file_id = self._find_json_file()
+            existing_files = self._list_json_files()
 
-            if existing_file_id:
-                self.service.files().delete(fileId=existing_file_id).execute()
+            if existing_files:
+                primary_id = existing_files[0]["id"]
+                media = MediaFileUpload(
+                    tmp_path,
+                    mimetype="application/json",
+                    resumable=False,
+                )
+                self.service.files().update(
+                    fileId=primary_id,
+                    media_body=media,
+                ).execute()
 
-            upload_file(
-                service=self.service,
-                file_path=tmp_path,
-                mime_type="application/json",
-                parent_folder_id=self.folder_id,
-                file_name=self.FILE_NAME,
-            )
+                for extra in existing_files[1:]:
+                    extra_id = extra.get("id")
+                    try:
+                        self.service.files().delete(fileId=extra_id).execute()
+                        logger.info(
+                            "Usunięto duplikat %s (id=%s) z folderu '%s'.",
+                            self.FILE_NAME,
+                            extra_id,
+                            self.FOLDER_NAME,
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            "Nie udało się usunąć duplikatu %s (id=%s): %s",
+                            self.FILE_NAME,
+                            extra_id,
+                            e,
+                        )
+
+            else:
+                upload_file(
+                    service=self.service,
+                    file_path=tmp_path,
+                    mime_type="application/json",
+                    parent_folder_id=self.folder_id,
+                    file_name=self.FILE_NAME,
+                )
 
             logger.info("Zapisano %d kandydatów do candidates.json", len(records))
 
@@ -135,8 +177,8 @@ class GoogleDriveCandidateStore:
     def append_candidate(
         self,
         profile: CandidateProfile,
-        job_matches: Optional[List[JobMatch]] = None,
         cv_drive_file_id: Optional[str] = None,
+        job_matches: Optional[list] = None,
         global_rejection_reason: Optional[str] = None,
     ) -> CandidateRecord:
         records = self.load_all()
@@ -144,12 +186,33 @@ class GoogleDriveCandidateStore:
         new_record = CandidateRecord(
             id=str(uuid.uuid4()),
             profile=profile,
+            cv_drive_file_id=cv_drive_file_id,
             job_matches=job_matches or [],
             global_rejection_reason=global_rejection_reason,
-            cv_drive_file_id=cv_drive_file_id,
         )
 
         records.append(new_record)
         self.save_all(records)
 
         return new_record
+
+    def delete_candidate(self, candidate_id: str) -> bool:
+        records = self.load_all()
+        before = len(records)
+
+        remaining = [r for r in records if r.id != candidate_id]
+
+        if len(remaining) == before:
+            logger.warning(
+                "Próba usunięcia kandydata %s, ale nie znaleziono go w candidates.json",
+                candidate_id,
+            )
+            return False
+
+        self.save_all(remaining)
+        logger.info(
+            "Usunięto kandydata %s z candidates.json (pozostało %d rekordów)",
+            candidate_id,
+            len(remaining),
+        )
+        return True
