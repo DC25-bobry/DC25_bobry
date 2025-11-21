@@ -1,5 +1,3 @@
-# backend/src/services/cv_storage.py
-
 import os
 import tempfile
 import logging
