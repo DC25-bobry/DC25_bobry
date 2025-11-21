@@ -16,8 +16,7 @@ class Config:
             self.google_drive = GoogleDriveSettings()
             self.smtp = SMTPSettings()
 
-            logger.info("✅ Configuration loaded successfully:\n%s",
-                        pprint.pformat(self.to_dict(), indent=2))
+            logger.info("✅ Configuration loaded successfully")
         except ValidationError as e:
             logger.error("❌ Configuration validation error", exc_info=e)
             for error in e.errors():

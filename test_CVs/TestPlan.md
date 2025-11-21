@@ -11,7 +11,6 @@
     - Senior Wood Quality Assurance Entry Level Graduate II
       - Required
         - Higher education
-        - 3 years of commercial experience
         - Valid dental examination
       - Important
         - Knowledge of Belarusian or a similar language at a communicative level

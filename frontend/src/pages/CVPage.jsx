@@ -16,7 +16,8 @@ import {
 export default function CVPage() {
   const [files, setFiles] = useState([]);
   const [processing, setProcessing] = useState(false);
-  const [results, setResults] = useState(null); // odpowiedź z backendu
+  const [sendingEmails, setSendingEmails] = useState(false);
+  const [results, setResults] = useState(null);
   const [topCandidatesCount, setTopCandidatesCount] = useState(3);
   const [emailsSent, setEmailsSent] = useState(new Set());
   const [error, setError] = useState(null);
@@ -109,24 +110,92 @@ export default function CVPage() {
     }
   };
 
-  const sendEmailToTopCandidates = () => {
+  const sendEmailToTopCandidates = async () => {
     if (!results || !results.jobs) return;
 
-    const newEmailsSent = new Set(emailsSent);
+    setSendingEmails(true);
+    setError(null);
 
-    results.jobs.forEach((job) => {
-      (job.candidates || [])
-        .filter((c) => c.is_top)
-        .forEach((candidate) => {
+    try {
+      const payload = {
+        top_n: topCandidatesCount,
+        jobs: results.jobs,
+        rejected: results.rejected || []
+      };
+
+      const response = await fetch(
+        'http://localhost:8000/notifications/send-emails',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        }
+      );
+
+      const textBody = await response.text().catch(() => '');
+      let data = null;
+
+      try {
+        data = textBody ? JSON.parse(textBody) : null;
+      } catch (jsonErr) {
+        console.error(
+          '❌ Nie udało się sparsować JSON z /notifications:',
+          jsonErr
+        );
+        console.error('Odpowiedź tekstowa z backendu:', textBody);
+        throw new Error('Backend /notifications zwrócił nieprawidłowy JSON');
+      }
+
+      if (!response.ok) {
+        console.error(
+          `❌ Backend /notifications/send-emails zwrócił błąd ${response.status}:`,
+          data || textBody
+        );
+        throw new Error(
+          data?.detail ||
+            `Backend /notifications/send-emails zwrócił ${response.status}`
+        );
+      }
+
+      console.log('✅ Odpowiedź /notifications/send-emails:', data);
+
+      const newEmailsSent = new Set(emailsSent);
+
+      (results.jobs || []).forEach((job) => {
+        (job.candidates || [])
+          .filter((c) => c.is_top)
+          .forEach((candidate) => {
+            newEmailsSent.add(candidate.candidate_id || candidate.file_name);
+          });
+      });
+
+      (results.rejected || []).forEach((candidate) => {
+        if (candidate.candidate_id || candidate.file_name) {
           newEmailsSent.add(candidate.candidate_id || candidate.file_name);
-        });
-    });
+        }
+      });
 
-    setEmailsSent(newEmailsSent);
-    alert(`Wysłłano maile do ${newEmailsSent.size} kandydatów!`);
+      setEmailsSent(newEmailsSent);
+
+      const sentAccept = data?.sent_accept ?? 0;
+      const sentReject = data?.sent_reject ?? 0;
+
+      alert(
+        `Wysłano ${sentAccept} maili z informacją o zakwalifikowaniu i ${sentReject} maili z odmową.`
+      );
+    } catch (err) {
+      console.error(err);
+      setError(
+        err.message ||
+          'Nie udało się wysłać maili. Sprawdź, czy backend na http://localhost:8000/notifications/send-emails działa poprawnie.'
+      );
+    } finally {
+      setSendingEmails(false);
+    }
   };
 
-  // dane podsumowania
   const totalCv = results?.total_cv ?? 0;
   const matchedCv = results?.matched_cv ?? 0;
   const rejectedCv = results?.rejected_cv ?? 0;
@@ -140,6 +209,8 @@ export default function CVPage() {
       0
     ) > 0;
 
+  const anyRejected = rejectedCandidates.length > 0;
+
   return (
     <div className="max-w-7xl mx-auto">
       <div className="mb-8">
@@ -151,7 +222,6 @@ export default function CVPage() {
         </p>
       </div>
 
-      {/* Panel przesyłania plików */}
       <div
         className="bg-white rounded-lg shadow-sm p-6 mb-6 border"
         style={{ borderColor: '#E0D8CF' }}
@@ -226,7 +296,6 @@ export default function CVPage() {
         )}
       </div>
 
-      {/* Panel konfiguracji */}
       <div
         className="bg-white rounded-lg shadow-sm p-6 mb-6 border"
         style={{ borderColor: '#E0D8CF' }}
@@ -259,7 +328,6 @@ export default function CVPage() {
         </div>
       </div>
 
-      {/* Przyciski akcji */}
       <div className="flex gap-3 mb-6">
         <button
           onClick={processCV}
@@ -280,26 +348,34 @@ export default function CVPage() {
           )}
         </button>
 
-        {results && anyMatched && (
+        {results && (anyMatched || anyRejected) && (
           <button
             onClick={sendEmailToTopCandidates}
-            className="flex items-center gap-2 px-6 py-3 rounded-lg text-white font-medium hover:opacity-90 transition"
+            disabled={sendingEmails}
+            className="flex items-center gap-2 px-6 py-3 rounded-lg text-white font-medium hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: '#4A7C59' }}
           >
-            <Send size={20} />
-            Wyślij maile do top {topCandidatesCount}
+            {sendingEmails ? (
+              <>
+                <Clock size={20} className="animate-spin" />
+                Wysyłanie maili...
+              </>
+            ) : (
+              <>
+                <Send size={20} />
+                Wyślij maile do top {topCandidatesCount} i odrzuconych
+              </>
+            )}
           </button>
         )}
       </div>
 
-      {/* Błąd */}
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
           <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
 
-      {/* Status przetwarzania */}
       {processing && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
           <div className="flex items-center gap-3">
@@ -316,10 +392,8 @@ export default function CVPage() {
         </div>
       )}
 
-      {/* Wyniki */}
       {results && !processing && (
         <div className="space-y-6">
-          {/* Podsumowanie */}
           <div className="grid grid-cols-3 gap-4">
             <div
               className="bg-white rounded-lg shadow-sm p-6 border"
@@ -376,7 +450,6 @@ export default function CVPage() {
             </div>
           </div>
 
-          {/* Dopasowani kandydaci (pogrupowani po ofertach) */}
           {jobs.length > 0 && (
             <div>
               <h3
@@ -478,7 +551,6 @@ export default function CVPage() {
                               </div>
                             </div>
 
-                            {/* Spełnione wymagania */}
                             {candidate.matched_requirements &&
                               candidate.matched_requirements.length > 0 && (
                                 <div className="mb-2">
@@ -510,7 +582,6 @@ export default function CVPage() {
                                 </div>
                               )}
 
-                            {/* Brakujące wymagania */}
                             {candidate.unmatched_requirements &&
                               candidate.unmatched_requirements.length > 0 && (
                                 <div>
@@ -546,7 +617,6 @@ export default function CVPage() {
                                 </div>
                               )}
 
-                            {/* Inne dopasowania */}
                             {candidate.other_matches &&
                               candidate.other_matches.length > 0 && (
                                 <div
@@ -570,8 +640,7 @@ export default function CVPage() {
                                             color: '#8B6F47'
                                           }}
                                         >
-                                          {match.job_title} -{' '}
-                                          {match.score}%
+                                          {match.job_title} - {match.score}%
                                         </span>
                                       )
                                     )}
@@ -588,7 +657,6 @@ export default function CVPage() {
             </div>
           )}
 
-          {/* Odrzuceni kandydaci */}
           {rejectedCandidates.length > 0 && (
             <div>
               <h3

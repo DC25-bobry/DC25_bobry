@@ -14,6 +14,7 @@ def normalize_text(text: str) -> str:
         return ""
 
     text = text.replace("\r\n", "\n").replace("\r", "\n")
+    text = text.replace("\xa0", "")
     text = _CTRL_PATTERN.sub("", text)
     text = _TRAILING_WS_PATTERN.sub("", text)
 
