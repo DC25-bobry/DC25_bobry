@@ -62,7 +62,7 @@ class CandidateExtractor:
             if len(tokens) >= 2:
                 return tokens[0], " ".join(tokens[1:])
 
-        return "Nieznane", "Nieznane"
+        return None, None
 
     def _extract_from_labeled_line(self, lines: List[str]) -> Optional[Tuple[str, str]]:
         for line in lines[:10]:
