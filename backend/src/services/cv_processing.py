@@ -5,7 +5,8 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from backend.src.models.candidate_profile import CandidateProfile
-from backend.src.models.candidate_matching import JobMatch
+from backend.src.models.candidate_matching import JobMatch, CandidateRecord
+from backend.src.models.job_offers_model import JobOffer
 from backend.src.services.candidate_extraction.candidate_extractor import CandidateExtractor
 from backend.src.services.candidate_storage import GoogleDriveCandidateStore
 from backend.src.services.job_selection import JobSelectionService
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class CandidateProcessingResult:
-    record: "CandidateRecord"
+    record: CandidateRecord
     file_name: str
 
 
@@ -27,7 +28,7 @@ def process_file(
     content_type: Optional[str],
     parsing_service,
     cv_drive_file_id: Optional[str],
-    jobs: List["JobOffer"],
+    jobs: List[JobOffer],
 ) -> CandidateProcessingResult:
     parsed_document = parsing_service.extract_text(
         file_bytes, filename=filename, content_type=content_type
