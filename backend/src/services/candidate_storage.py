@@ -1,23 +1,18 @@
 from __future__ import annotations
 
+import io
 import json
 import logging
-import os
-import tempfile
 import uuid
-from typing import List, Optional, Any
+from typing import List, Optional
 
 from googleapiclient.discovery import Resource
-from googleapiclient.http import MediaFileUpload
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
 from pydantic import BaseModel, ValidationError
 
-from backend.src.services.google_drive_connect import (
-    get_service,
-    list_files,
-    upload_file,
-    download_file,
-)
+from backend.src.models.candidate_matching import JobMatch
 from backend.src.models.candidate_profile import CandidateProfile
+from backend.src.services.google_drive_connect import get_service, list_files
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +22,7 @@ class CandidateRecord(BaseModel):
     profile: CandidateProfile
     cv_drive_file_id: Optional[str] = None
 
-    job_matches: Optional[list] = None
+    job_matches: List[JobMatch] = []
     global_rejection_reason: Optional[str] = None
 
     class Config:
@@ -60,125 +55,126 @@ class GoogleDriveCandidateStore:
         created = self.service.files().create(body=metadata, fields="id").execute()
         return created["id"]
 
-    def _list_json_files(self) -> List[dict[str, Any]]:
+    def _find_json_file(self) -> Optional[str]:
         query = (
-            f"'{self.folder_id}' in parents "
-            f"and name='{self.FILE_NAME}' "
-            f"and mimeType='application/json' "
-            f"and trashed=false"
+            f"'{self.folder_id}' in parents and "
+            f"trashed = false and "
+            f"name = '{self.FILE_NAME}'"
         )
-        resp = (
+
+        result = (
             self.service.files()
-            .list(q=query, fields="files(id, name, mimeType)")
+            .list(
+                q=query,
+                fields="files(id, name, mimeType, modifiedTime)",
+            )
             .execute()
         )
-        return resp.get("files", [])
+        files = result.get("files", [])
 
-    def _find_json_file(self) -> Optional[str]:
-        files = self._list_json_files()
         if not files:
             return None
 
-        if len(files) > 1:
-            logger.warning(
-                "Znaleziono %d kopii %s w folderze '%s'. "
-                "Zostawiam pierwszą (id=%s) – duplikaty zostaną usunięte przy zapisie.",
-                len(files),
-                self.FILE_NAME,
-                self.FOLDER_NAME,
-                files[0]["id"],
-            )
-        return files[0]["id"]
+        if len(files) == 1:
+            return files[0]["id"]
+
+        files_sorted = sorted(
+            files,
+            key=lambda f: f.get("modifiedTime", ""),
+            reverse=True,
+        )
+        newest = files_sorted[0]
+        to_delete = files_sorted[1:]
+
+        for old in to_delete:
+            try:
+                self.service.files().delete(fileId=old["id"]).execute()
+                logger.warning(
+                    "Usuwam duplikat candidates.json (id=%s)", old.get("id")
+                )
+            except Exception as e:
+                logger.error(
+                    "Nie udało się usunąć duplikatu candidates.json (id=%s): %s",
+                    old.get("id"),
+                    e,
+                )
+
+        return newest["id"]
 
     def load_all(self) -> List[CandidateRecord]:
         file_id = self._find_json_file()
         if not file_id:
             return []
 
-        with tempfile.NamedTemporaryFile(delete=False) as tmp:
-            tmp_path = tmp.name
+        request = self.service.files().get_media(fileId=file_id)
+        buffer = io.BytesIO()
+        downloader = MediaIoBaseDownload(buffer, request)
+
+        done = False
+        while not done:
+            status, done = downloader.next_chunk()
+
+        buffer.seek(0)
 
         try:
-            download_file(self.service, file_id, tmp_path)
-            with open(tmp_path, "r", encoding="utf-8") as f:
-                raw_list = json.load(f)
+            raw_list = json.load(io.TextIOWrapper(buffer, encoding="utf-8"))
+        except json.JSONDecodeError as e:
+            logger.error("Błędny JSON w candidates.json, zwracam pustą listę: %s", e)
+            return []
 
-            records: List[CandidateRecord] = []
-            for item in raw_list:
-                try:
-                    records.append(CandidateRecord(**item))
-                except ValidationError as e:
-                    logger.error(
-                        "Błędny rekord kandydata w candidates.json, pomijam: %s",
-                        e,
-                    )
-                    continue
-            return records
+        records: List[CandidateRecord] = []
+        for item in raw_list:
+            try:
+                records.append(CandidateRecord(**item))
+            except ValidationError as e:
+                logger.error(
+                    "Błędny rekord kandydata w candidates.json, pomijam: %s", e
+                )
+                continue
 
-        finally:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
+        return records
 
     def save_all(self, records: List[CandidateRecord]) -> None:
-        with tempfile.NamedTemporaryFile(
-            delete=False, mode="w", encoding="utf-8"
-        ) as tmp:
-            tmp_path = tmp.name
-            json.dump([r.dict() for r in records], tmp, ensure_ascii=False, indent=2)
+        json_bytes = json.dumps(
+            [r.model_dump() for r in records],
+            ensure_ascii=False,
+            indent=2,
+        ).encode("utf-8")
 
-        try:
-            existing_files = self._list_json_files()
-
-            if existing_files:
-                primary_id = existing_files[0]["id"]
-                media = MediaFileUpload(
-                    tmp_path,
-                    mimetype="application/json",
-                    resumable=False,
-                )
-                self.service.files().update(
-                    fileId=primary_id,
-                    media_body=media,
-                ).execute()
-
-                for extra in existing_files[1:]:
-                    extra_id = extra.get("id")
-                    try:
-                        self.service.files().delete(fileId=extra_id).execute()
-                        logger.info(
-                            "Usunięto duplikat %s (id=%s) z folderu '%s'.",
-                            self.FILE_NAME,
-                            extra_id,
-                            self.FOLDER_NAME,
-                        )
-                    except Exception as e:
-                        logger.warning(
-                            "Nie udało się usunąć duplikatu %s (id=%s): %s",
-                            self.FILE_NAME,
-                            extra_id,
-                            e,
-                        )
-
-            else:
-                upload_file(
-                    service=self.service,
-                    file_path=tmp_path,
-                    mime_type="application/json",
-                    parent_folder_id=self.folder_id,
-                    file_name=self.FILE_NAME,
+        existing_file_id = self._find_json_file()
+        if existing_file_id:
+            try:
+                self.service.files().delete(fileId=existing_file_id).execute()
+            except Exception as e:
+                logger.error(
+                    "Nie udało się usunąć starego candidates.json (id=%s): %s",
+                    existing_file_id,
+                    e,
                 )
 
-            logger.info("Zapisano %d kandydatów do candidates.json", len(records))
+        media = MediaIoBaseUpload(
+            io.BytesIO(json_bytes),
+            mimetype="application/json",
+            resumable=False,
+        )
+        metadata = {
+            "name": self.FILE_NAME,
+            "parents": [self.folder_id],
+        }
 
-        finally:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
+        self.service.files().create(
+            body=metadata,
+            media_body=media,
+            fields="id",
+        ).execute()
+
+        logger.info("Zapisano %d kandydatów do candidates.json", len(records))
 
     def append_candidate(
         self,
         profile: CandidateProfile,
+        job_matches: Optional[List[JobMatch]] = None,
         cv_drive_file_id: Optional[str] = None,
-        job_matches: Optional[list] = None,
         global_rejection_reason: Optional[str] = None,
     ) -> CandidateRecord:
         records = self.load_all()
@@ -199,20 +195,12 @@ class GoogleDriveCandidateStore:
     def delete_candidate(self, candidate_id: str) -> bool:
         records = self.load_all()
         before = len(records)
+        records = [r for r in records if r.id != candidate_id]
+        after = len(records)
 
-        remaining = [r for r in records if r.id != candidate_id]
-
-        if len(remaining) == before:
-            logger.warning(
-                "Próba usunięcia kandydata %s, ale nie znaleziono go w candidates.json",
-                candidate_id,
-            )
+        if after == before:
             return False
 
-        self.save_all(remaining)
-        logger.info(
-            "Usunięto kandydata %s z candidates.json (pozostało %d rekordów)",
-            candidate_id,
-            len(remaining),
-        )
+        self.save_all(records)
+        logger.info("Usunięto kandydata %s z candidates.json", candidate_id)
         return True
