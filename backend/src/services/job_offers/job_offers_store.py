@@ -62,7 +62,7 @@ class GoogleDriveJobOfferStore:
         if folder:
             self.folder_id = folder
         else:
-            logger.info("Folder 'oferta' nie istnieje — tworzę...")
+            logger.info("Directory 'oferta' does not exist. Creating a new folder on Google Drive.")
             self.folder_id = self._create_folder()
 
     def _find_json_file(self) -> Optional[str]:
@@ -98,7 +98,7 @@ class GoogleDriveJobOfferStore:
                 return json.load(f)
 
         except Exception as e:
-            logger.error("Błąd odczytu job_offers.json: %s", e)
+            logger.error("Error occured when reading from job_offers.json: %s", e)
             return []
 
         finally:

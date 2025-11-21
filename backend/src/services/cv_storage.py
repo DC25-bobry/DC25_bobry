@@ -24,7 +24,7 @@ def _ensure_cv_folder(service: Resource) -> str:
         ):
             return f["id"]
 
-    logger.info("Folder 'CV' nie istnieje. Tworzę nowy folder na Google Drive.")
+    logger.info("Directory 'CV' not found on Google Drive. Creating a new one.")
     metadata = {
         "name": "CV",
         "mimeType": "application/vnd.google-apps.folder",
@@ -54,7 +54,7 @@ def save_cv_file_to_drive(
             file_name=filename,
         )
         file_id = created["id"]
-        logger.info("Zapisano CV '%s' na Google Drive (id=%s)", filename, file_id)
+        logger.info("Saved CV '%s' to Google Drive (id=%s)", filename, file_id)
         return file_id
     finally:
         if os.path.exists(tmp_path):

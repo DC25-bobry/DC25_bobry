@@ -47,7 +47,7 @@ class GoogleDriveCandidateStore:
             ):
                 return f["id"]
 
-        logger.info("Folder 'CV' nie istnieje – tworzę nowy folder na Google Drive.")
+        logger.info("Directory 'CV' does not exist. Creating a new folder on Google Drive.")
         metadata = {
             "name": self.FOLDER_NAME,
             "mimeType": "application/vnd.google-apps.folder",
@@ -90,11 +90,11 @@ class GoogleDriveCandidateStore:
             try:
                 self.service.files().delete(fileId=old["id"]).execute()
                 logger.warning(
-                    "Usuwam duplikat candidates.json (id=%s)", old.get("id")
+                    "Deleting duplicate candidates.json (id=%s)", old.get("id")
                 )
             except Exception as e:
                 logger.error(
-                    "Nie udało się usunąć duplikatu candidates.json (id=%s): %s",
+                    "Could not delete duplicate candidates.json (id=%s): %s",
                     old.get("id"),
                     e,
                 )
@@ -119,7 +119,7 @@ class GoogleDriveCandidateStore:
         try:
             raw_list = json.load(io.TextIOWrapper(buffer, encoding="utf-8"))
         except json.JSONDecodeError as e:
-            logger.error("Błędny JSON w candidates.json, zwracam pustą listę: %s", e)
+            logger.error("Wrong JSON in candidates.json, returning empty list: %s", e)
             return []
 
         records: List[CandidateRecord] = []
@@ -128,7 +128,7 @@ class GoogleDriveCandidateStore:
                 records.append(CandidateRecord(**item))
             except ValidationError as e:
                 logger.error(
-                    "Błędny rekord kandydata w candidates.json, pomijam: %s", e
+                    "Wrong record in candidates.json, skipping: %s", e
                 )
                 continue
 
@@ -147,7 +147,7 @@ class GoogleDriveCandidateStore:
                 self.service.files().delete(fileId=existing_file_id).execute()
             except Exception as e:
                 logger.error(
-                    "Nie udało się usunąć starego candidates.json (id=%s): %s",
+                    "Could not delete old candidate from candidates.json (id=%s): %s",
                     existing_file_id,
                     e,
                 )
@@ -168,7 +168,7 @@ class GoogleDriveCandidateStore:
             fields="id",
         ).execute()
 
-        logger.info("Zapisano %d kandydatów do candidates.json", len(records))
+        logger.info("Saved %d caniddates to candidates.json", len(records))
 
     def append_candidate(
         self,
@@ -202,5 +202,5 @@ class GoogleDriveCandidateStore:
             return False
 
         self.save_all(records)
-        logger.info("Usunięto kandydata %s z candidates.json", candidate_id)
+        logger.info("Candidate %s was deleted from candidates.json", candidate_id)
         return True

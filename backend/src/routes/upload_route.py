@@ -36,7 +36,7 @@ async def upload_files(
     jobs: List[JobOffer] = [JobOffer(**o) for o in offers_data]
 
     if not jobs:
-        logger.warning("Brak ofert pracy w Google Drive (job_offers.json pusty).")
+        logger.warning("No job offers available for matching.")
 
     sem = asyncio.Semaphore(10)
 
@@ -84,7 +84,7 @@ async def upload_files(
     candidate_results: List[CandidateProcessingResult] = []
     for res in raw_results:
         if isinstance(res, Exception):
-            logger.exception("Błąd wewnętrzny podczas przetwarzania CV: %s", res)
+            logger.exception("Internal error occured when processing CV: %s", res)
             continue
         if res is None:
             continue
